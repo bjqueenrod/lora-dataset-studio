@@ -72,6 +72,32 @@ RUN /app/.venv/bin/pip install --no-cache-dir --no-deps \
 RUN /app/.venv/bin/pip install --no-cache-dir open_clip_torch transformers timm \
         safetensors huggingface_hub -c backend/requirements-ml.txt
 
+# ai-toolkit (ostris/ai-toolkit): the actual LoRA training engine this Studio writes
+# configs for and launches as a subprocess once Settings -> Local tools -> aitoolkit.dir
+# points at it. Not shipped upstream — added here so training can run on the same GPU
+# as the Studio instead of handing off to LDS's vast.ai cloud-training lane. Kept in its
+# own venv, fully separate from /app/.venv above and from /comfy/mnt/venv (ComfyUI,
+# created at runtime by the base image): ai-toolkit's README pins torch==2.13.0 from
+# the cu130 wheel index, a different build than the cu129 wheels this app uses, and the
+# two must never resolve into one venv. cu130 wheels need an r580+ driver; this base
+# image's own default is cu129/575.51.03, so confirm the pod's actual driver
+# (nvidia-smi) satisfies cu130 before relying on this layer.
+# datasets_dir / output_dir / hf_home default to subfolders of this ai-toolkit folder
+# (per its settings) — point those at the mounted volume instead (e.g. under /data or
+# /comfy/mnt) via Settings -> Local tools once the container is running, so training
+# outputs and the HF cache survive a container recreate.
+ARG AITOOLKIT_REF=main
+RUN git --version || (apt-get update && apt-get install -y --no-install-recommends git \
+        && rm -rf /var/lib/apt/lists/*)
+RUN git clone --depth 1 --branch ${AITOOLKIT_REF} \
+        https://github.com/ostris/ai-toolkit.git /opt/ai-toolkit \
+ && python3 -m venv /opt/ai-toolkit/venv \
+ && /opt/ai-toolkit/venv/bin/pip install --no-cache-dir --upgrade pip \
+ && /opt/ai-toolkit/venv/bin/pip install --no-cache-dir \
+        torch==2.13.0 torchvision==0.28.0 torchaudio==2.11.0 \
+        --index-url https://download.pytorch.org/whl/cu130 \
+ && /opt/ai-toolkit/venv/bin/pip install --no-cache-dir -r /opt/ai-toolkit/requirements.txt
+
 COPY backend backend
 COPY frontend/dist frontend/dist
 COPY store/bootstrap.json store/public-root.json store/patreon.json store/
