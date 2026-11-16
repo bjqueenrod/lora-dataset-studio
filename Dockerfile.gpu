@@ -104,11 +104,25 @@ COPY store/bootstrap.json store/public-root.json store/patreon.json store/
 COPY config.example.json .
 COPY packaging/docker packaging/docker
 
+# Ollama (ollama.com): the vision-model server LDS's Settings > Local tools >
+# "Existing host Ollama" talks to for captioning, auto-framing and head-crop.
+# Only the binary is installed here — pulling a model (e.g. the abliterated
+# Qwen3-VL this app's Setup wizard recommends) and actually running the
+# server both happen at container start, in packaging/docker/ollama_launch.sh,
+# since docker-compose/network-volume deployments vary on whether Ollama runs
+# in this container at all. zstd is required by Ollama's own install script
+# to unpack its release archive, which git/apt-get didn't already pull in.
+RUN apt-get update && apt-get install -y --no-install-recommends zstd \
+        && rm -rf /var/lib/apt/lists/* \
+ && curl -fsSL https://ollama.com/install.sh | sh
+
 # "skip" is the mode upstream's run_userscript uses for /userscripts_dir/*.sh: it
 # refuses a script that is not executable rather than chmod-ing it, so the bit has to
 # be set here. The 50- prefix leaves room either side for a user's own scripts.
 RUN install -D -m 755 packaging/docker/studio_launch.sh \
-        /userscripts_dir/50-lora-dataset-studio.sh
+        /userscripts_dir/50-lora-dataset-studio.sh \
+ && install -D -m 755 packaging/docker/ollama_launch.sh \
+        /userscripts_dir/51-ollama.sh
 
 # Deliberately NO build-time `chown -R /app`: rewriting every file's metadata
 # makes BuildKit copy the whole tree — torch included — into a second layer.
