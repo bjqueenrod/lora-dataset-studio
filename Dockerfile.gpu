@@ -122,7 +122,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends zstd \
 RUN install -D -m 755 packaging/docker/studio_launch.sh \
         /userscripts_dir/50-lora-dataset-studio.sh \
  && install -D -m 755 packaging/docker/ollama_launch.sh \
-        /userscripts_dir/51-ollama.sh
+        /userscripts_dir/51-ollama.sh \
+ && install -D -m 755 packaging/docker/data_backup.sh \
+        /userscripts_dir/52-data-backup.sh
 
 # Deliberately NO build-time `chown -R /app`: rewriting every file's metadata
 # makes BuildKit copy the whole tree — torch included — into a second layer.
