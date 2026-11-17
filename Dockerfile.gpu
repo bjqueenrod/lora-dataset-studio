@@ -119,7 +119,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends zstd \
 # "skip" is the mode upstream's run_userscript uses for /userscripts_dir/*.sh: it
 # refuses a script that is not executable rather than chmod-ing it, so the bit has to
 # be set here. The 50- prefix leaves room either side for a user's own scripts.
-RUN install -D -m 755 packaging/docker/studio_launch.sh \
+RUN install -D -m 755 packaging/docker/data_restore.sh \
+        /userscripts_dir/49-data-restore.sh \
+ && install -D -m 755 packaging/docker/studio_launch.sh \
         /userscripts_dir/50-lora-dataset-studio.sh \
  && install -D -m 755 packaging/docker/ollama_launch.sh \
         /userscripts_dir/51-ollama.sh \
