@@ -46,6 +46,19 @@ snapshot_once() {
     rsync -a --delete "$SRC/banks/" "$DEST/banks/" 2>/dev/null \
       || cp -r "$SRC/banks/." "$DEST/banks/" 2>/dev/null
   fi
+  # Real per-dataset/per-run data that would be expensive or impossible to
+  # reproduce if lost: full-res reference/generated/imported images per
+  # dataset, encoded training video, and durable trained LoRA weights from
+  # cloud runs. Each is created lazily on first use, so on a fresh install
+  # none of these exist yet and the loop below is a no-op — deliberately NOT
+  # including cloud_runs/ (working/staging for a cloud run, explicitly safe
+  # to delete once it ends) or the thumbnail-only video_banks/.
+  for d in datasets checkpoints video_datasets bank_sources video_bank_sources run_images; do
+    if [ -d "$SRC/$d" ]; then
+      rsync -a --delete "$SRC/$d/" "$DEST/$d/" 2>/dev/null \
+        || cp -r "$SRC/$d/." "$DEST/$d/" 2>/dev/null
+    fi
+  done
   chmod -R 777 "$DEST" 2>/dev/null || true
 }
 
