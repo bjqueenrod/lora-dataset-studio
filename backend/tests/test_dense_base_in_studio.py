@@ -191,7 +191,7 @@ def test_a_base_outside_the_list_is_still_refused(app, comfy):
             base_model='..\\evil.safetensors', allowed_bases=allowed)
 
 
-def test_a_raw_base_carries_the_negative_prompt_to_the_sampler(app, comfy):
+def test_a_raw_base_carries_the_negative_prompt_to_the_sampler(app, comfy, monkeypatch):
     """A Raw base samples at CFG 4, where ComfyUI evaluates the negative branch.
     Krea was left out of the negative-prompt families: the panel hid the field,
     the knobs dropped the text and the cell builder never wrote node 24."""
@@ -199,8 +199,10 @@ def test_a_raw_base_carries_the_negative_prompt_to_the_sampler(app, comfy):
     caps = lts.generation_capabilities('krea')
     assert caps['negative_prompt'] and caps['negative_prompt_needs_cfg']
     assert lts._sanitize_gen_knobs('krea', negative=' blurry ')['negative'] == 'blurry'
+    # Every Krea cell of this line's Studio tests a LoRA (it has no base-only run): one test LoRA.
+    monkeypatch.setattr(lts, 'get_krea_loras', lambda: [{'filename': 'krea/t.safetensors'}])
     with app.app_context():
-        wf = lts._build_cell_workflow(1, None, 1.0, 'a photo', 7, None, set(), cfg=4.0,
+        wf = lts._build_cell_workflow(1, 'krea/t.safetensors', 1.0, 'a photo', 7, None, set(), cfg=4.0,
                                       train_type='krea', negative='blurry')
     assert wf['24']['inputs']['text'] == 'blurry'
     assert wf['26']['inputs']['cfg'] == 4.0

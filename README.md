@@ -29,8 +29,7 @@ People shown in the demo and screenshots are AI-generated.
 1. Download `LoRA-Dataset-Studio-windows.zip` from the [latest release](https://github.com/perfectgf/lora-dataset-studio/releases/latest) and extract it into a new folder.
 2. Double-click `start.bat`. It prepares Python and opens LDS in your browser.
 
-Complete **Setup**, then create a dataset or install the plugins you need. Importing, organizing and manually captioning images require no GPU or API key. Local training also needs [ai-toolkit](https://github.com/ostris/ai-toolkit) and local generation needs [ComfyUI](https://github.com/comfyanonymous/ComfyUI): see [external tools](docs/guide/installation.md#external-tools).
-
+Complete **Setup**, then create a dataset or install the plugins you need. Importing, organizing and manually captioning images require no GPU or API key. Local training also needs [ai-toolkit](https://github.com/ostris/ai-toolkit), which **Setup** can install for you in one click on a PC with an NVIDIA GPU, and local generation needs [ComfyUI](https://github.com/comfyanonymous/ComfyUI): see [external tools](docs/guide/installation.md#external-tools).
 | Installation | Instructions |
 |---|---|
 | Git checkout or manual Python environment | [Native installation](docs/guide/installation.md#windows) |
@@ -321,8 +320,7 @@ Start from the guided recipe for your family: LDS fills in the ai-toolkit settin
 
 ### [Which LoRA trainer should I use? Do I need the command line?](docs/faq/which-lora-trainer.md)
 
-LDS trains with [ai-toolkit](https://github.com/ostris/ai-toolkit). Once ai-toolkit is installed and set in **Settings → Local tools**, LDS writes the training config: pick a recipe and start the run from the browser, with the queue and logs on the runs page. Datasets also export as standard ZIPs with `.txt` caption files, so the same set can feed kohya_ss, OneTrainer or another trainer.
-
+LDS trains with [ai-toolkit](https://github.com/ostris/ai-toolkit). **Setup** installs it in one click on a PC with an NVIDIA GPU, or you select a copy you already have in **Settings → Local tools**. LDS then writes the training config: pick a recipe and start the run from the browser, with the queue and logs on the runs page. Datasets also export as standard ZIPs with `.txt` caption files, so the same set can feed kohya_ss, OneTrainer or another trainer.
 ### [How much VRAM do I need to train a LoRA?](docs/faq/lora-training-vram.md)
 
 Importing, sorting and manual captioning need no GPU. Auto-captioning takes about 8 GB of VRAM and local generation about 16 GB. LoRA training needs 16 GB or more for Z-Image (quantized, low-VRAM mode) and SDXL, 16 to 24 GB for FLUX.2 Klein 4B (32 to 48 GB for 9B), 24 GB for Krea 2 at 1024 px (under 24 GB, train at 768 px only) and about 24 GB for FLUX.1 and Anima. Short on VRAM? The [Cloud training](bundled/cloud_training/) plugin trains supported families on rented [vast.ai](https://cloud.vast.ai/?ref_id=683073) GPUs, and LDS itself can run on a [RunPod GPU](docs/guide/runpod.md). See the [hardware tables](docs/guide/requirements.md).
