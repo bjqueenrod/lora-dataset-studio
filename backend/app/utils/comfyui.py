@@ -173,6 +173,18 @@ MODEL_OPTIMAL_PARAMS = {
         "cfg": 1.0,
         "dmd2_lora_strength": 1.0,
     },
+    # Big Lust v1.6 (civitai.com/models/575395) is a bigASP + LUSTIFY merge —
+    # full SDXL, same shape as lustifySDXLNSFW_ggwpV7 above. Untested at the
+    # LUSTIFY-validated recipe; mirrors it rather than guessing new values,
+    # since Lustify is one of its two merge ingredients. Under-cooked (flat,
+    # no detail) at the workflow's own defaults before this entry existed.
+    "bigLust1.6.safetensors": {
+        "sampler_name": "lcm",
+        "scheduler": "ddim_uniform",
+        "steps": 8,
+        "cfg": 1.0,
+        "dmd2_lora_strength": 1.0,
+    },
 
     # -- SDXL DMD-distilled - CFG ~= 1, 6-9 steps, DMD2 LoRA ON ------------
     "dmdmopPro_v10.safetensors": {
