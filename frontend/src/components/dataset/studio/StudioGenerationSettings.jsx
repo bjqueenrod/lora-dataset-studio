@@ -4,8 +4,9 @@
  * single-LoRA Studio, matching Generate without its prompt builder. The matrix remains
  * LoRA/strength; aspect/CFG/steps axes are handled elsewhere. Family-gated StudioSections offer:
  * FORMAT for all through ResolutionSelector/resolution_tier; SAMPLING for Krea with allowed
- * sampler/scheduler and empty Auto; DETAIL for SDXL with DetailDaemon 0-1; ENGINE for Krea with
- * precision, finishing and permanent_loras; NEGATIVE when supported by the server. This component owns
+ * sampler/scheduler and empty Auto; DETAIL for SDXL with DetailDaemon 0-1; always-on LoRAs for
+ * SDXL in their own section, for Krea inside ENGINE alongside precision/finishing; NEGATIVE when
+ * supported by the server. This component owns
  * state, persists by storagePrefix, and emits normalized snake_case /run settings via onChange.
  * Omit empty fields to retain backend defaults; server also gates by family. Props: family,
  * storagePrefix, optional permanentLoras candidates [{filename,label|displayName,triggerWord}],
@@ -154,9 +155,10 @@ export default function StudioGenerationSettings({ family = 'zimage', capabiliti
 
   // Always-on LoRA candidates come from the full Studio's family-scoped payload, otherwise
   // config.krea_loras. Exclude lora_* trained characters because they are a test AXIS, mirroring
-  // backend permanent_lora_candidates.
+  // backend permanent_lora_candidates. SDXL gets candidates only from the `permanentLoras` prop
+  // (RunSetupPanel passes them for every family); there is no SDXL equivalent of config.krea_loras.
   const permCandidates = useMemo(() => {
-    if (!isKrea) return [];
+    if (!isKrea && !isSdxl) return [];
     if (permanentLoras != null) {
       return permanentLoras.map((l) => ({
         filename: l.filename, displayName: l.displayName || l.label || basename(l.filename), triggerWord: l.triggerWord,
@@ -165,7 +167,7 @@ export default function StudioGenerationSettings({ family = 'zimage', capabiliti
     return (config?.krea_loras || [])
       .filter((l) => !basename(l.filename).toLowerCase().startsWith('lora_'))
       .map((l) => ({ filename: l.filename, displayName: l.displayName || basename(l.filename), triggerWord: l.triggerWord }));
-  }, [isKrea, permanentLoras, config]);
+  }, [isKrea, isSdxl, permanentLoras, config]);
 
   // Emit normalized snake_case /run settings, OMITTING empty values to preserve backend defaults.
   // onChange should be stable, such as parent setState, to avoid loops; include it in dependencies
@@ -183,6 +185,16 @@ export default function StudioGenerationSettings({ family = 'zimage', capabiliti
     if (isSdxl) {
       s.detail_amount = detailAmount;
     }
+    if (isKrea || isSdxl) {
+      // Split always-on stack: batch-checked LoRAs become server-managed with/without test AXES;
+      // others apply to EVERY cell as before. Shared with SDXL, unlike the Krea-only knobs below.
+      const alwaysOn = permStack.filter((e) => !e.batch)
+        .map(({ filename, strength }) => ({ filename, strength }));
+      const batched = permStack.filter((e) => e.batch)
+        .map(({ filename, strength }) => ({ filename, strength }));
+      if (alwaysOn.length) s.permanent_loras = alwaysOn;
+      if (batched.length) s.batch_loras = batched;
+    }
     if (isKrea) {
       // ONE choice maps to TWO fields. Putting a preset name into sampler would give ComfyUI an
       // unknown sampler and reject the whole graph. See utils/kreaSamplerChoice.js.
@@ -195,14 +207,6 @@ export default function StudioGenerationSettings({ family = 'zimage', capabiliti
       // keys. Keep these rules in utils/studioFinishKnobs.js so node --test can exercise them.
       Object.assign(s, hiresPayload({ scale: hiresScale, denoise: hiresDenoise }, hiresDefaults));
       Object.assign(s, finishPayload({ sharpen: finishSharpen, grain: finishGrain }));
-      // Split always-on stack: batch-checked LoRAs become server-managed with/without test AXES;
-      // others apply to EVERY cell as before.
-      const alwaysOn = permStack.filter((e) => !e.batch)
-        .map(({ filename, strength }) => ({ filename, strength }));
-      const batched = permStack.filter((e) => e.batch)
-        .map(({ filename, strength }) => ({ filename, strength }));
-      if (alwaysOn.length) s.permanent_loras = alwaysOn;
-      if (batched.length) s.batch_loras = batched;
     }
     onChange?.(s);
   }, [hasNegative, isSdxl, isKrea, resolutionTier, resolutionMultiplier, aspectPicker, aspect, negative, detailAmount, sampler, scheduler,
@@ -342,6 +346,22 @@ export default function StudioGenerationSettings({ family = 'zimage', capabiliti
           <span className="normal-case tracking-normal text-[0.625rem] text-content-muted/70 -mt-1">
             0.21 = SDXL default · ≤0.25 safe · ↑ more detail (HDR/grain risk)
           </span>
+        </StudioSection>
+      )}
+
+      {/* SDXL always-on LoRAs: the Krea Engine section below also offers this, but SDXL has
+       * none of Krea's precision/sampler/finishing knobs, so it gets its own small section
+       * rather than being folded into "Engine". */}
+      {isSdxl && permCandidates.length > 0 && (
+        <StudioSection title="Always-on LoRAs" storageKey={k('sec_perm_sdxl')} anchorId="st-perm">
+          <ZImageLoraConfig
+            loras={permCandidates}
+            onChange={setPermStack}
+            storageKey={k('perm')}
+            label="Always-on LoRAs (every cell · ⚖ batch = tested as an axis)"
+            emptyHint="No always-on LoRA for this pipeline."
+            batchToggle
+          />
         </StudioSection>
       )}
 
